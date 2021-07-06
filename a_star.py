@@ -7,6 +7,37 @@ tiles match the user defined end-state.
 
 This is an attempt at solving the 24 puzzle using A-star and Manhattan
 heutistic.
+
+EXAMPLE:
+    > INITIAL STATE
+     1  2  3  4  5
+     6  7  8  9 10
+    11 12 13 14 15
+    16 17  0 19 20
+    21 22 23 24 18
+    
+    > Moved DOWN ↓ from (3, 2) to position (4, 2)
+     1  2  3  4  5
+     6  7  8  9 10
+    11 12 13 14 15
+    16 17 23 19 20
+    21 22  0 24 18
+    
+    ...
+    
+    > FINAL STATE
+     1  2  3  4  5
+     6  7  8  9 10
+    11 12 13 14 15
+    16 17 18 19 20
+    21 22 23 24  0
+
+    ---------------------------------------------
+                    SUMMARY                   
+    > MOVES MADE: 11
+    > NODES VISITED: 70
+    > SECONDS ELAPSED: 0.062
+    ---------------------------------------------
 """
 
 import numpy as np, pandas as pd
@@ -60,11 +91,11 @@ class PuzzleBase:
             # From the value of the current tile, assign index of where it
             # should end
             final_index = self.__final.index(current_tile)
-            #
+            # Get the current tile position relative to the board
             cur_i, cur_j = current_index // int(
                 np.sqrt(len(self.__state))
             ), current_index % int(np.sqrt(len(self.__state)))
-            #
+            # Get the end tile position relative to the board
             goal_i, goal_j = final_index // int(
                 np.sqrt(len(self.__state))
             ), final_index % int(np.sqrt(len(self.__state)))
@@ -74,6 +105,7 @@ class PuzzleBase:
             )
 
     def calculate_manhattan(self, x1, y1, x2, y2):
+        """Sum the moves required to moves each tile requires to"""
         return abs(x1 - x2) + abs(y1 - y2)
 
 
@@ -82,13 +114,12 @@ class PuzzleMechanics:
     """Set up base rules for an n x n puzzle"""
 
     def __init__(self, initial, final, max_tries=999_999):
-        self.__initial = initial
-        self.__final = final
-        self.__MAX = 100_000
-        self.__max_tries = max_tries
-        self.__path = []
-        self.__number_of_steps = 0
-        self.__summary = ""
+        self.__initial = initial  # Initial board state
+        self.__final = final  # Final board state
+        self.__MAX = 100_000  # Size of priority queue
+        self.__max_tries = max_tries  # Number of iterations/tries before giving up
+        self.__path = []  # Where in the search tree
+        self.__summary = ""  # Console output collector
 
     def set_max_tries(self, max_tries):
         self.__max_tries = max_tries
@@ -105,13 +136,14 @@ class PuzzleMechanics:
         x_axis = [1, 0, -1, 0]
         y_axis = [0, 1, 0, -1]
 
+        # Initialise tracking vars
         level = 0
         visited_nodes = set()
 
         # Start timer
         start_time = time.process_time()
 
-        # Instantiate the queue
+        # Instantiate the priority queue
         nodes = PriorityQueue(self.__MAX)
         # Instantiate the game object
         init_node = PuzzleBase(
@@ -130,6 +162,7 @@ class PuzzleMechanics:
         while nodes.qsize() and total_visited_nodes <= self.__max_tries:
             total_visited_nodes += 1
 
+            # Get the position of the blank tile
             cur_node = nodes.get()
             cur_state = cur_node.get_state()
 
@@ -137,7 +170,8 @@ class PuzzleMechanics:
             if str(cur_state) in visited_nodes:
                 continue
             visited_nodes.add(str(cur_state))
-            
+
+            # When the tiles match the user-defined end state, stop searching
             if cur_state == self.__final.flatten().tolist():
                 self.__summary = str(
                     f"> MOVES MADE: {str(cur_node.get_level())}\n"
@@ -156,9 +190,11 @@ class PuzzleMechanics:
                 empty_tile % self.__final.shape[0],
             )
 
+            # Get current position against final position
             cur_state = np.array(cur_state).reshape(
                 self.__final.shape[0], self.__final.shape[0]
             )
+            # Iterate through the legal moves for each tile
             for x, y in zip(x_axis, y_axis):
                 new_state = np.array(cur_state)
                 if (
@@ -177,8 +213,11 @@ class PuzzleMechanics:
                         cur_node.get_level() + 1,
                         cur_node,
                     )
+                    # Add nodes to array of visited nodes
                     if str(puzzle_instance.get_state()) not in visited_nodes:
                         nodes.put(puzzle_instance)
+
+        # Break out of loop when user-defined max_tries is reached
         if total_visited_nodes > self.__max_tries:
             print(
                 "! Puzzle either is impossible to move into final state OR max iterations reached"
@@ -191,12 +230,11 @@ def A_star(initial, final, max_tries):
     solver = PuzzleMechanics(initial, final, max_tries)
     path = solver.solve_a_star()
 
-    if len(path) == 0:
-        exit(1)
-
     init_idx = initial.flatten().tolist().index(0)
+    print(init_idx)
+    # Get the index of the blank space (i.e., 0)
     init_i, init_j = init_idx // final.shape[0], init_idx % final.shape[0]
-
+    
     print(DASH)
     print("{:*^45}".format(" INITIAL STATE "))
     print(DASH)
@@ -206,6 +244,7 @@ def A_star(initial, final, max_tries):
         )
     )
     print()
+    # Display current move of the "blank (i.e., 0)" space
     for node in reversed(path):
         current_index = node.get_state().index(0)
         cur_i, cur_j = current_index // final.shape[0], current_index % final.shape[0]
