@@ -1,4 +1,4 @@
-'''
+"""
 24 PUZZLE
 ---------
 Given a 5 by 5 board with 24 tiles (each tile is numbered from 1 to 24)
@@ -7,7 +7,7 @@ tiles match the user defined end-state.
 
 This is an attempt at solving the 24 puzzle using A-star and Manhattan
 heutistic.
-'''
+"""
 
 import numpy as np, pandas as pd
 from queue import PriorityQueue
@@ -17,8 +17,8 @@ import random, sys, time
 DASH = "-" * 45
 
 
-# GAME STATE
-class GameState:
+# Set up puzzle
+class PuzzleBase:
     def __init__(self, state, final, level, parent=None):
         self.__state = state
         self.__final = final
@@ -60,11 +60,11 @@ class GameState:
             # From the value of the current tile, assign index of where it
             # should end
             final_index = self.__final.index(current_tile)
-            # 
+            #
             cur_i, cur_j = current_index // int(
                 np.sqrt(len(self.__state))
             ), current_index % int(np.sqrt(len(self.__state)))
-            # 
+            #
             goal_i, goal_j = final_index // int(
                 np.sqrt(len(self.__state))
             ), final_index % int(np.sqrt(len(self.__state)))
@@ -77,19 +77,21 @@ class GameState:
         return abs(x1 - x2) + abs(y1 - y2)
 
 
-# SOLVER
-class Solver:
-    def __init__(self, initial, final, max_iter=999_999):
+# Define puzzle mechanics
+class PuzzleMechanics:
+    """Set up base rules for an n x n puzzle"""
+
+    def __init__(self, initial, final, max_tries=999_999):
         self.__initial = initial
         self.__final = final
         self.__MAX = 100_000
-        self.__max_iter = max_iter
+        self.__max_tries = max_tries
         self.__path = []
         self.__number_of_steps = 0
         self.__summary = ""
 
-    def set_max_iter(self, max_iter):
-        self.__max_iter = max_iter
+    def set_max_tries(self, max_tries):
+        self.__max_tries = max_tries
 
     def get_path(self):
         return self.__path
@@ -97,6 +99,7 @@ class Solver:
     def get_summary(self):
         return self.__summary
 
+    # Use A-star to solve puzzle
     def solve_a_star(self):
         # Define the legal moves for a tile (up, down, etc.)
         x_axis = [1, 0, -1, 0]
@@ -111,7 +114,7 @@ class Solver:
         # Instantiate the queue
         nodes = PriorityQueue(self.__MAX)
         # Instantiate the game object
-        init_node = GameState(
+        init_node = PuzzleBase(
             self.__initial.flatten().tolist(),
             self.__final.flatten().tolist(),
             level,
@@ -124,16 +127,17 @@ class Solver:
         total_visited_nodes = 0
         # Continue if queue size is not None and total_visited_nodes is lte
         # user-defined iterations
-        while nodes.qsize() and total_visited_nodes <= self.__max_iter:
+        while nodes.qsize() and total_visited_nodes <= self.__max_tries:
             total_visited_nodes += 1
 
             cur_node = nodes.get()
             cur_state = cur_node.get_state()
 
+            # Add node to list of visited nodes
             if str(cur_state) in visited_nodes:
                 continue
             visited_nodes.add(str(cur_state))
-
+            
             if cur_state == self.__final.flatten().tolist():
                 self.__summary = str(
                     f"> MOVES MADE: {str(cur_node.get_level())}\n"
@@ -167,23 +171,24 @@ class Solver:
                         new_state[i + x, j + y],
                         new_state[i, j],
                     )
-                    game_state = GameState(
+                    puzzle_instance = PuzzleBase(
                         new_state.flatten().tolist(),
                         self.__final.flatten().tolist(),
                         cur_node.get_level() + 1,
                         cur_node,
                     )
-                    if str(game_state.get_state()) not in visited_nodes:
-                        nodes.put(game_state)
-        if total_visited_nodes > self.__max_iter:
+                    if str(puzzle_instance.get_state()) not in visited_nodes:
+                        nodes.put(puzzle_instance)
+        if total_visited_nodes > self.__max_tries:
             print(
                 "! Puzzle either is impossible to move into final state OR max iterations reached"
             )
         return self.__path
 
 
-def A_star(initial, final, max_iter):
-    solver = Solver(initial, final, max_iter)
+def A_star(initial, final, max_tries):
+    """Implement puzzle rules and A-star together and define console outputs"""
+    solver = PuzzleMechanics(initial, final, max_tries)
     path = solver.solve_a_star()
 
     if len(path) == 0:
@@ -266,17 +271,18 @@ def main(argv):
     Get user input and implement A-star with Manhattan heuristic to solve
     n-puzzle
 
-    @param max_iter : The max tries before stopping the search
-    @param n        : The size of the board
-    @param initial  : The starting state of the puzzle board
-    @param final    : The ending state of the puzzle board
+    @param max_tries : The max tries before stopping the search
+    @param n         : The size of the board
+    @param initial   : The starting state of the puzzle board
+    @param final     : The ending state of the puzzle board
     """
-    max_iter = 9_000  # Number of iterations before program termination
+    max_tries = 100_000  # Number of iterations before program termination
     n = 5  # n x n size of puzzle board
 
     while True:
         # Create starting array
         # initial = " ".join(str(elem) for elem in random.sample(range(25), 25))
+        # initial = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 0 21 22 23 24 20"
         initial = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 19 20 21 22 23 24 18"
         initial = initial.split()
         initial = [int(initial[i]) for i in range(len(initial))]
@@ -295,8 +301,8 @@ def main(argv):
     initial = np.array(initial).reshape(n, n)
     final = np.array(final).reshape(n, n)
 
-    # Instantiate A_star class
-    A_star(initial, final, max_iter)
+    # Call A-star function
+    A_star(initial, final, max_tries)
 
 
 if __name__ == "__main__":
