@@ -276,8 +276,8 @@ def main(argv):
 
     while True:
         # Create starting array
-        initial = " ".join(str(elem) for elem in random.sample(range(25), 25))
-        # initial = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 19 20 21 22 23 24 18"
+        # initial = " ".join(str(elem) for elem in random.sample(range(25), 25))
+        initial = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 19 20 21 22 23 24 18"
         initial = initial.split()
         initial = [int(initial[i]) for i in range(len(initial))]
 
