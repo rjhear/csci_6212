@@ -105,7 +105,7 @@ class PuzzleBase:
             )
 
     def calculate_manhattan(self, x1, y1, x2, y2):
-        """Sum the moves required to moves each tile requires to"""
+        """Sum the moves each tile in current state will take to get to gaol state"""
         return abs(x1 - x2) + abs(y1 - y2)
 
 
@@ -230,9 +230,8 @@ def A_star(initial, final, max_tries):
     solver = PuzzleMechanics(initial, final, max_tries)
     path = solver.solve_a_star()
 
-    init_idx = initial.flatten().tolist().index(0)
-    print(init_idx)
     # Get the index of the blank space (i.e., 0)
+    init_idx = initial.flatten().tolist().index(0)
     init_i, init_j = init_idx // final.shape[0], init_idx % final.shape[0]
     
     print(DASH)
